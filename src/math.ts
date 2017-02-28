@@ -66,6 +66,28 @@ module math {
     var TwoPI = PI * 2;
     var DEG_TO_RAD: number = Math.PI / 180;
 
+    export class Rectangle{
+        x = 0;
+        y = 0;
+        width = 1;
+        height = 1;
+
+        isPointInRectangle(x : number,y : number){
+            var point = new Point(x,y);
+            var rect = this;
+            if(point.x < rect.x + rect.width &&
+               point.x > rect.x &&
+               point.y < rect.y + rect.height &&
+               point.y > rect.y){
+                   return true;
+               }
+               else{
+                   return false;
+               }
+        }
+    }
+
+
 
     export class Matrix {
 
@@ -91,7 +113,6 @@ module math {
         public ty: number;
 
         public toString(): string {
-            
             return "(a=" + this.a + ", b=" + this.b + ", c=" + this.c + ", d=" + this.d + ", tx=" + this.tx + ", ty=" + this.ty + ")";
         }
 
@@ -111,4 +132,3 @@ module math {
         }
     }
 }
-
