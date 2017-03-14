@@ -1,6 +1,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
+		
 		{
 			"name": "Wing 内置播放器调试",
 			"type": "chrome",
