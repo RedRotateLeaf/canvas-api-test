@@ -1,110 +1,138 @@
-namespace engine{
+namespace engine {
+    export function run(canvas: HTMLCanvasElement) {
 
-    //记录位置
-    export var currentX : number;
-    export var currentY : number;
-    export var lastX : number;
-    export var lastY : number;
+        // var canvas = document.getElementById("context") as HTMLCanvasElement;
+        var context2d = canvas.getContext("2d");
+        var stage = new Stage(context2d);
+        var canvasRenderer = new CanvasRenderer(stage, context2d);
 
-    export let run = (canvas: HTMLCanvasElement) => {
-
-        var stage = new DisplayObjectContainer();
-        let context2D = canvas.getContext("2d");
         let lastNow = Date.now();
-
-        let frameHandler = () => {
-            
+        let enterFrame = (callback) => {
             let now = Date.now();
-            let deltaTime = now - lastNow;
-            Ticker.getInstance().notify(deltaTime);
-            
-            context2D.clearRect(0, 0, 400, 400);
-            context2D.save();
-            stage.draw(context2D);
-            context2D.restore();
+            var deltaTime = now - lastNow;
+            eventDispose();
+            Ticker.Instance.notify(deltaTime);
+
+            context2d.clearRect(0, 0, canvas.width, canvas.height)
+            context2d.save();
+            // stage.draw(context2d);
+            stage.update();
+            canvasRenderer.render();
+            context2d.restore();
+
             lastNow = now;
-            window.requestAnimationFrame(frameHandler);
+            window.requestAnimationFrame(enterFrame);;
         }
-    
-        window.requestAnimationFrame(frameHandler);
+        window.requestAnimationFrame(enterFrame);
 
 
 
-
-        var isMouseDown = false;//检测鼠标是否按下
-        var hitResult : DisplayObject;//检测是否点到控件
-
-        window.onmousedown = (e)=>{
-            
-            isMouseDown = true;
-            let targetDisplayObjectArray = EventManager.getInstance().targetDisplayObjcetArray;
-            targetDisplayObjectArray.splice(0,targetDisplayObjectArray.length);
-            hitResult = stage.hitTest(e.offsetX, e.offsetY);
-            currentX = e.offsetX;
-            currentY = e.offsetY;
+        //事件处理机制
+        function eventDispose() {
+            var event = new Event(Event.ENTER_FRAME);
+            stage.dispatchEvent(event);
         }
 
-
-
-        window.onmousemove = (e)=>{
-            
-            let targetDisplayObjcetArray = EventManager.getInstance().targetDisplayObjcetArray;
-            lastX = currentX;
-            lastY = currentY;
-            currentX = e.offsetX;
-            currentY = e.offsetY;
-
-            if (isMouseDown) {
-
-                for (let i = 0; i < targetDisplayObjcetArray.length; i++) {
-
-                    for (let event of targetDisplayObjcetArray[i].eventArray) {
-                    
-                        if (event.type.match("onmousemove") && event.ifCapture) {
-
-                             event.func(e);
-                        }
-                    }
+        //MyTouchEvent的相应机制
+        window.onmousedown = (down) => {
+            var downX = down.x - 3;
+            var downY = down.y - 3;
+            var touchEvent = new MyTouchEvent(downX, downY, MyTouchEvent.TouchDown);
+            var downChain = stage.hitTest(downX, downY);
+            stage.$dispatchPropagationEvent(downChain, touchEvent, true);
+            // stage.dispatchEvent(downChain, touchEvent);
+            window.onmouseup = (up) => {
+                var upX = down.x - 3;
+                var upY = down.y - 3;
+                var upChain = stage.hitTest(upX, upY);
+                if (downChain[0] == upChain[0]) {
+                    var touchEvent = new MyTouchEvent(downX, downY, MyTouchEvent.TouchClick);
+                    var ChickChain = stage.hitTest(upX, upY);
+                    stage.$dispatchPropagationEvent(ChickChain, touchEvent, true);
+                    // stage.dispatchEvent(ChickChain, touchEvent);
                 }
-
-                for (let i = targetDisplayObjcetArray.length - 1; i >= 0; i--) {
-
-                    for (let event of targetDisplayObjcetArray[i].eventArray) {
-
-                        if (event.type.match("onmousemove") && !event.ifCapture) {
-
-                            event.func(e);
-                        }
-                    }
-                }
+                stage.$dispatchPropagationEvent(upChain, touchEvent, true);
+                // stage.dispatchEvent(upChain, touchEvent);
             }
         }
 
-
-        window.onmouseup = (e)=>{
-
-            isMouseDown = false;
-            let targetDisplayObjcetArray = EventManager.getInstance().targetDisplayObjcetArray;
-            targetDisplayObjcetArray.splice(0,targetDisplayObjcetArray.length);
-            let newHitRusult = stage.hitTest(e.offsetX, e.offsetY)
-
-            for (let i = targetDisplayObjcetArray.length - 1; i >= 0; i--) {
-
-                for (let event of targetDisplayObjcetArray[i].eventArray) {
-
-                    if (event.type.match("onclick") && newHitRusult == hitResult ) {
-
-                        event.func(e);
-                    }
+        window.onmousedown = (down) => {
+            ifMouseDown = true;
+            var downX = down.x - 3;
+            var downY = down.y - 3;
+            var touchEvent = new MyTouchEvent(downX, downY, MyTouchEvent.TouchDown);
+            var downChain = stage.hitTest(downX, downY);
+            // stage.$dispatchPropagationEvent(downChain, touchEvent, true);
+            // stage.dispatchEvent(downChain, touchEvent);
+            window.onmouseup = (up) => {
+                ifMouseDown = false;
+                var upX = down.x - 3;
+                var upY = down.y - 3;
+                var upChain = stage.hitTest(upX, upY);
+                if (downChain[0] == upChain[0]) {
+                    var touchEvent = new MyTouchEvent(downX, downY, MyTouchEvent.TouchClick);
+                    var ChickChain = stage.hitTest(upX, upY);
+                    stage.$dispatchPropagationEvent(ChickChain, touchEvent, true);
+                    // stage.dispatchEvent(ChickChain, touchEvent);
                 }
+                stage.$dispatchPropagationEvent(upChain, touchEvent, true);
+                // stage.dispatchEvent(upChain, touchEvent);
             }
         }
 
+        let clickResult: DisplayObject;
+        let currentX: number;
+        let currentY: number;
+        let tempX: number;
+        let tempY: number;
+        let ifMouseDown = false;
+
+
+        window.onmousemove = (down) => {
+            var downX = down.x - 3;
+            var downY = down.y - 3;
+            var touchEvent = new MyTouchEvent(downX, downY, MyTouchEvent.TouchDown);
+            var downChain = stage.hitTest(downX, downY);
+
+            tempX = currentX;
+            tempY = currentY;
+
+            currentX = down.offsetX;
+            currentY = down.offsetY;
+
+            if (ifMouseDown) {
+                // for (var i = 0; i < downChain.length; i++) {
+                //     for (let temp of downChain[i].listenerList) {
+                //         if (temp.type == MyTouchEvent.TOUCH_MOVE && temp.isCapture == true) {
+                //             temp.func(down);
+                //         }
+                //     }
+                // }
+                // for (var i = 0; i < downChain.length - 1; i++) {
+                //     for (let temp of downChain[i].listenerList) {
+                //         if (temp.type == MyTouchEvent.TOUCH_MOVE && temp.isCapture == false) {
+                //             temp.func(down);
+                //         }
+                //     }
+                // }
+                var temp = downChain[0];
+                temp.listenerList.forEach(listen => {
+                    if (listen.type == MyTouchEvent.TOUCH_BEGIN) {
+                        console.log("begin");
+                        listen.func();
+                    }
+                    if (listen.type == MyTouchEvent.TOUCH_MOVE) {
+                        console.log("move");
+                        listen.func();
+                    }
+                    if (listen.type == MyTouchEvent.TOUCH_END) {
+                        console.log("end");
+                        listen.func();
+                    }
+                });
+            }
+        }
 
         return stage;
-
     }
-
-
-
 }
